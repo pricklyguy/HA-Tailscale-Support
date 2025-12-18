@@ -1,0 +1,357 @@
+####################################################
+# Prickly Guy Remote Support Access (PG-SUPPORT-v5)
+# OAuth Edition - Never Expires!
+#
+# PURPOSE:
+# Client-controlled, time-limited remote support
+# using Tailscale OAuth and device tags.
+#
+# FEATURES:
+# - OAuth tokens auto-refresh (never expire)
+# - Client controls access with simple toggle
+# - Auto-timeout after configurable period
+# - Visual notifications on all devices
+# - Secure tag-based access control
+#
+# INSTALLATION:
+# See included installation guide below
+####################################################
+
+homeassistant:
+  customize:
+    sensor.support_access_remaining:
+      icon: mdi:timer-sand
+
+##################################
+# HELPERS
+##################################
+input_boolean:
+  support_access_enabled:
+    name: Enable Remote Support Access
+    icon: mdi:shield-lock-open
+    initial: false
+
+input_number:
+  support_access_timeout:
+    name: Support Access Timeout (hours)
+    min: 0.5
+    max: 8
+    step: 0.5
+    unit_of_measurement: h
+    initial: 2
+
+##################################
+# RESTFUL SENSOR FOR TOKEN
+##################################
+rest:
+  - resource: https://api.tailscale.com/api/v2/oauth/token
+    method: POST
+    headers:
+      Content-Type: application/x-www-form-urlencoded
+    payload: !secret tailscale_oauth_payload
+    scan_interval: 3000  # Refresh every 50 minutes (tokens expire after 60 min)
+    sensor:
+      - name: "Tailscale Access Token"
+        value_template: "{{ value_json.access_token }}"
+        json_attributes:
+          - token_type
+          - expires_in
+
+##################################
+# REST COMMANDS
+##################################
+rest_command:
+  tailscale_set_tags:
+    url: "https://api.tailscale.com/api/v2/device/{{ device_id }}/tags"
+    method: POST
+    headers:
+      Authorization: "Bearer {{ access_token }}"
+      Content-Type: "application/json"
+    payload: '{"tags": {{ tags | tojson }}}'
+
+##################################
+# SCRIPTS
+##################################
+script:
+  support_enable_access:
+    alias: Enable Support Access
+    sequence:
+      # Wait for token to be available
+      - wait_template: "{{ states('sensor.tailscale_access_token') not in ['unknown', 'unavailable', ''] }}"
+        timeout: 30
+      # Apply support-enabled tag
+      - action: rest_command.tailscale_set_tags
+        data:
+          device_id: !secret tailscale_device_id
+          access_token: "{{ states('sensor.tailscale_access_token') }}"
+          tags: ["tag:support-enabled"]
+      - delay:
+          seconds: 3
+      - action: persistent_notification.create
+        data:
+          title: "🟢 Remote Support Enabled"
+          message: >
+            Support access is now enabled for {{ states('input_number.support_access_timeout') }} hours.
+            Auto-disable at: {{ (now() + timedelta(hours=states('input_number.support_access_timeout')|float)).strftime('%I:%M %p') }}
+
+  support_disable_access:
+    alias: Disable Support Access
+    sequence:
+      # Wait for token to be available
+      - wait_template: "{{ states('sensor.tailscale_access_token') not in ['unknown', 'unavailable', ''] }}"
+        timeout: 30
+      # Set back to client-device tag
+      - action: rest_command.tailscale_set_tags
+        data:
+          device_id: !secret tailscale_device_id
+          access_token: "{{ states('sensor.tailscale_access_token') }}"
+          tags: ["tag:client-device"]
+      - delay:
+          seconds: 3
+      - action: persistent_notification.create
+        data:
+          title: "🔴 Remote Support Disabled"
+          message: "Support access has been disabled. Your system is secure."
+
+##################################
+# TEMPLATE SENSORS
+##################################
+template:
+  - sensor:
+      - name: "Support Access Remaining"
+        state: >
+          {% if is_state('input_boolean.support_access_enabled', 'on') %}
+            {% set timeout = states('input_number.support_access_timeout') | float %}
+            {% set enabled_time = as_timestamp(states.input_boolean.support_access_enabled.last_changed) %}
+            {% set current_time = as_timestamp(now()) %}
+            {% set elapsed = (current_time - enabled_time) / 3600 %}
+            {% set remaining = timeout - elapsed %}
+            {% if remaining > 0 %}
+              {{ (remaining * 60) | round(0) }} minutes
+            {% else %}
+              Expired
+            {% endif %}
+          {% else %}
+            Disabled
+          {% endif %}
+        icon: mdi:timer-sand
+
+##################################
+# AUTOMATIONS
+##################################
+automation:
+  - alias: Support Access Enabled
+    id: support_access_enabled_v5
+    trigger:
+      - trigger: state
+        entity_id: input_boolean.support_access_enabled
+        to: "on"
+    action:
+      - action: script.support_enable_access
+
+  - alias: Support Access Disabled
+    id: support_access_disabled_v5
+    trigger:
+      - trigger: state
+        entity_id: input_boolean.support_access_enabled
+        to: "off"
+    action:
+      - action: script.support_disable_access
+
+  - alias: Support Access Auto Timeout
+    id: support_access_auto_timeout_v5
+    mode: restart
+    trigger:
+      - trigger: state
+        entity_id: input_boolean.support_access_enabled
+        to: "on"
+    action:
+      - delay:
+          hours: "{{ states('input_number.support_access_timeout') | float }}"
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.support_access_enabled
+      - action: persistent_notification.create
+        data:
+          title: "⏱️ Support Access Timed Out"
+          message: "Remote support access has automatically disabled after timeout period."
+
+####################################################
+# SECRETS.YAML TEMPLATE (Copy to your secrets.yaml)
+####################################################
+#
+# tailscale_oauth_client_id: "k1234567890ABCDEFGHIJKLMNOPQR"
+# tailscale_oauth_client_secret: "tskey-client-kXXXXXXXXXXX-YYYYYYYYYYYYYYYYYYYYYYYYYY"
+# tailscale_device_id: "5482145682376894"
+# 
+# # Update this payload with YOUR actual client_id and client_secret:
+# tailscale_oauth_payload: "client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&grant_type=client_credentials"
+#
+####################################################
+
+####################################################
+# DASHBOARD CARD (Copy into your dashboard)
+####################################################
+#
+# type: vertical-stack
+# cards:
+#   - type: markdown
+#     content: |
+#       ## 🔐 Remote Technical Support
+#       
+#       {% if is_state('input_boolean.support_access_enabled', 'on') %}
+#       ### ⚠️ SUPPORT ACCESS IS CURRENTLY **ACTIVE**
+#       
+#       **Prickly Guy** can access your Home Assistant right now.
+#       
+#       Time remaining: **{{ states('sensor.support_access_remaining') }}**
+#       
+#       Access will automatically disable when the timer expires.
+#       {% else %}
+#       ### ✅ System is Secure
+#       
+#       Remote support access is currently **disabled**.
+#       
+#       Only enable this when you've requested technical support and are working with Prickly Guy.
+#       {% endif %}
+#       
+#       ---
+#       
+#       **How it works:**
+#       - Turn on the switch below only when you need help
+#       - Choose how long to allow access (default: 2 hours)
+#       - Access automatically turns off after the time expires
+#       - You can manually turn it off anytime
+#       - Your phones and tablets are **never** affected
+#
+#   - type: entities
+#     show_header_toggle: false
+#     state_color: true
+#     entities:
+#       - entity: input_boolean.support_access_enabled
+#         name: Enable Remote Support Access
+#         icon: mdi:account-wrench
+#       - entity: input_number.support_access_timeout
+#         name: Auto-disable after (hours)
+#         icon: mdi:timer-outline
+#       - type: divider
+#       - entity: sensor.support_access_remaining
+#         name: Time Remaining
+#         icon: mdi:timer-sand
+#
+#   - type: conditional
+#     conditions:
+#       - entity: input_boolean.support_access_enabled
+#         state: "on"
+#     card:
+#       type: markdown
+#       content: |
+#         ### 🟢 Support Session Active
+#         
+#         If you want to end the support session early, simply turn off the switch above.
+#         
+#         **Need help?** Text or call Prickly Guy if you have questions.
+#       card_mod:
+#         style: |
+#           ha-card {
+#             background-color: rgba(76, 175, 80, 0.1);
+#             border: 2px solid var(--success-color);
+#           }
+#
+#   - type: button
+#     name: End Support Session Now
+#     icon: mdi:shield-lock
+#     tap_action:
+#       action: call-service
+#       action: input_boolean.turn_off
+#       target:
+#         entity_id: input_boolean.support_access_enabled
+#     show_state: false
+#     entity: input_boolean.support_access_enabled
+#     visibility:
+#       - condition: state
+#         entity: input_boolean.support_access_enabled
+#         state: "on"
+#
+####################################################
+
+####################################################
+# TAILSCALE ACL (Paste into Tailscale admin console)
+####################################################
+#
+# {
+# 	"grants": [
+# 		// Allow Owner Access
+# 		{
+# 			"src": ["autogroup:owner"],
+# 			"dst": ["*"],
+# 			"ip":  ["*"]
+# 		},
+# 		// Only allow support connection when support tag is enabled
+# 		{
+# 			"src": ["pricklyguy@github"],
+# 			"dst": ["tag:support-enabled"],
+# 			"ip":  ["8123"]
+# 		}
+# 	],
+# 	// Define users and devices that can use Tailscale SSH
+# 	"ssh": [
+# 		{
+# 			"action": "check",
+# 			"src":    ["autogroup:member"],
+# 			"dst":    ["autogroup:self"],
+# 			"users":  ["autogroup:nonroot", "root"]
+# 		}
+# 	],
+# 	"tagOwners": {
+# 		// Use when not allowing remote support (default state)
+# 		"tag:client-device": ["autogroup:admin"],
+# 		// Used only to allow remote support
+# 		"tag:support-enabled": ["autogroup:admin"]
+# 	},
+# 	"nodeAttrs": [
+# 		{
+# 			"target": ["autogroup:member"],
+# 			"attr":   ["funnel"]
+# 		}
+# 	]
+# }
+#
+####################################################
+
+####################################################
+# OPTIONAL: Support Access Reminder Automation
+# (Uncomment and add to automations if desired)
+####################################################
+#
+# automation:
+#   - alias: Support Access Active Reminder
+#     id: support_access_reminder
+#     mode: restart
+#     trigger:
+#       - trigger: state
+#         entity_id: input_boolean.support_access_enabled
+#         to: "on"
+#         for:
+#           minutes: 30
+#       - trigger: state
+#         entity_id: input_boolean.support_access_enabled
+#         to: "on"
+#         for:
+#           minutes: 60
+#     action:
+#       - service: persistent_notification.create
+#         data:
+#           title: "🔔 Reminder: Support Access Still Active"
+#           message: >
+#             Remote support access has been enabled for {{ relative_time(states.input_boolean.support_access_enabled.last_changed) }}.
+#             {{ states('sensor.support_access_remaining') }} remaining until auto-disable.
+#             
+#             Turn it off in the Remote Technical Support card if you're done.
+#
+####################################################
+
+####################################################
+# END OF FILE
+####################################################
+
