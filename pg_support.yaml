@@ -182,9 +182,9 @@ automation:
 #
 # tailscale_oauth_client_id: "k1234567890ABCDEFGHIJKLMNOPQR"
 # tailscale_oauth_client_secret: "tskey-client-kXXXXXXXXXXX-YYYYYYYYYYYYYYYYYYYYYYYYYY"
-# tailscale_device_id: "5482145682376894"
+# tailscale_device_id: "xyMnrSTecxCNTRL"
 # 
-# # Update this payload with YOUR actual client_id and client_secret:
+# # Update this payload with YOUR actual client_id and client_secret from above:
 # tailscale_oauth_payload: "client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&grant_type=client_credentials"
 #
 ####################################################
@@ -222,7 +222,7 @@ automation:
 #       - Choose how long to allow access (default: 2 hours)
 #       - Access automatically turns off after the time expires
 #       - You can manually turn it off anytime
-#       - Your phones and tablets are **never** affected
+#       - Your other Tailscale devices are **never** affected
 #
 #   - type: entities
 #     show_header_toggle: false
@@ -250,7 +250,7 @@ automation:
 #         
 #         If you want to end the support session early, simply turn off the switch above.
 #         
-#         **Need help?** Text or call Prickly Guy if you have questions.
+#         **Need help?** Text or emal Prickly Guy if you have questions. Support@PricklyGuy.com
 #       card_mod:
 #         style: |
 #           ha-card {
@@ -263,7 +263,7 @@ automation:
 #     icon: mdi:shield-lock
 #     tap_action:
 #       action: call-service
-#       action: input_boolean.turn_off
+#       service: input_boolean.turn_off
 #       target:
 #         entity_id: input_boolean.support_access_enabled
 #     show_state: false
@@ -285,13 +285,13 @@ automation:
 # 		{
 # 			"src": ["autogroup:owner"],
 # 			"dst": ["*"],
-# 			"ip":  ["*"]
+# 			"ip":  ["*"],
 # 		},
 # 		// Only allow support connection when support tag is enabled
 # 		{
 # 			"src": ["pricklyguy@github"],
 # 			"dst": ["tag:support-enabled"],
-# 			"ip":  ["8123"]
+# 			"ip":  ["8123"],
 # 		}
 # 	],
 # 	// Define users and devices that can use Tailscale SSH
