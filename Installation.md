@@ -4,10 +4,12 @@ Prerequisites
 Home Assistant installed and accessible
 Access to Tailscale admin console
 Text editor or notepad for copying credentials
+Card Mod intalled for Dashboard card
 
 Step 1: Prepare Home Assistant Package
 Download the pg_support.yaml package file
-Copy it to /config/packages/ folder in Home Assistant
+Create file pg_support.yaml in /config/packages/ folder in Home Assistant
+Copy downloaded yaml to that file
 Do NOT restart yet - we'll use the commented sections as reference during setup
 
 Step 2: Create Tailscale Account & Install
@@ -29,10 +31,10 @@ Click Share
 Wait for Prickly Guy to accept the share before proceeding
 
 Step 4: Configure Access Control List (ACL)
-In the client's Tailscale admin console (not support account), go to Access Controls
+In the client's Tailscale admin console, go to Access Controls
 Click Switch to JSON (if in visual editor mode)
 Copy the ACL JSON from the commented section at the bottom of pg_support.yaml
-Paste over the existing ACL content
+Paste over the existing ACL content (please note if you have ever changed this file, you'll need to merge them)
 Verify these sections exist:
 tagOwners section contains: tag:client-device and tag:support-enabled
 grants section contains rules for owner and pricklyguy@github
@@ -41,8 +43,9 @@ Click Save
 Step 5: Get Device ID
 Still in Tailscale admin console, go to Machines
 Click on your Home Assistant device
-Look for ID: field (example: 5482145682376894)
+Look for ID: field (example: xyMnrSTecxCNTRL)
 Copy this ID - you'll need it for secrets.yaml
+If you hover on the question mark, it will tell you this your tailnet id for your device
 
 Step 6: Create OAuth Credentials
 In Tailscale admin console, go to Settings → Trust Credentials
@@ -61,7 +64,7 @@ Step 7: Configure Home Assistant Secrets
 Open /config/secrets.yaml in Home Assistant
 Copy the secrets template from the commented section in pg_support.yaml
 Update with your actual values:
- tailscale_oauth_client_id: "k1234..." # From Step 6tailscale_oauth_client_secret: "tskey-client-k..." # From Step 6tailscale_device_id: "5482145682376894" # From Step 5# Update this payload with YOUR client_id and client_secrettailscale_oauth_payload: "client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&grant_type=client_credentials"
+ tailscale_oauth_client_id: "k1234..." # From Step 6 tailscale_oauth_client_secret: "tskey-client-k..." # From Step 6 tailscale_device_id: "xyMnrSTecxCNTRL" # From Step 5 # Update this payload with YOUR client_id and client_secrettailscale_oauth_payload: "client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&grant_type=client_credentials"
 
 
 Save the file (Ctrl+S or Cmd+S)
@@ -121,12 +124,6 @@ You can manually disable anytime by toggling the switch
 Your phones and tablets are never affected by this
 OAuth credentials never expire - set it up once and forget it
 
-For Prickly Guy Reference
-Client's device will appear in your support Tailscale after accepting share
-Access only works when client has enabled support tag
-Default timeout: 2 hours (client can adjust 0.5-8 hours)
-Access auto-disables after timeout
-OAuth tokens auto-refresh every 50 minutes
 
 Setup Complete! 🎉
 
