@@ -17,6 +17,7 @@ Allows you to provide secure, time-limited remote support to Home Assistant inst
 - Home Assistant with packages enabled
 - Tailscale account (free tier works)
 - Tailscale add-on installed in Home Assistant
+- Card mod installed for dashboard card
 
 ## Installation
 See [INSTALLATION.md](INSTALLATION.md) for complete step-by-step instructions.
