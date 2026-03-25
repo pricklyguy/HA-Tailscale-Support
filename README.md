@@ -20,11 +20,11 @@ Allows you to provide secure, time-limited remote support to Home Assistant inst
 - Card mod installed for dashboard card
 
 ## Installation
-See [INSTALLATION.md](installation.md) for complete step-by-step instructions.
+See [INSTALLATION.md](Installation.md) for complete step-by-step instructions.
 
 ## Quick Start
 1. Drop `pg_support.yaml` into `/config/packages/`
-2. Follow the [installation guide](installation.md)
+2. Follow the [installation guide](Installation.md)
 3. Client toggles support access when needed
 4. Access automatically expires after timeout
 
