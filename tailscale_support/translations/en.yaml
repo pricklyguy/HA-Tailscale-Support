@@ -1,0 +1,19 @@
+configuration:
+  tailscale_client_id:
+    name: Tailscale OAuth client ID
+    description: OAuth client ID for a Tailscale trust credential with devices:core access.
+  tailscale_client_secret:
+    name: Tailscale OAuth client secret
+    description: Long-lived OAuth client secret. Store this only in the Home Assistant App configuration.
+  tailscale_device_id:
+    name: Tailscale device ID
+    description: ID of the Home Assistant device whose tags will be changed.
+  client_tag:
+    name: Client tag
+    description: Tag restored when remote support is disabled.
+  support_tag:
+    name: Support tag
+    description: Tag applied while remote support is enabled.
+  default_timeout_minutes:
+    name: Default support timeout
+    description: Maximum time a support session remains enabled.
