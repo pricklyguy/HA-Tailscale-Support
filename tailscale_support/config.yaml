@@ -1,0 +1,31 @@
+name: "Prickly Guy Remote Support"
+version: "2.0.0-beta.1"
+slug: "prickly_guy_tailscale_support"
+description: "Client-controlled, time-limited Tailscale access for remote Home Assistant support."
+arch:
+  - amd64
+  - aarch64
+url: "https://github.com/pricklyguy/HA-Tailscale-Support"
+startup: application
+boot: auto
+ingress: true
+ingress_port: 8099
+ingress_stream: true
+panel_icon: mdi:account-wrench
+panel_title: "Remote Support"
+panel_admin: false
+stage: experimental
+options:
+  tailscale_client_id: ""
+  tailscale_client_secret: ""
+  tailscale_device_id: ""
+  client_tag: "tag:client-device"
+  support_tag: "tag:support-enabled"
+  default_timeout_minutes: 120
+schema:
+  tailscale_client_id: str
+  tailscale_client_secret: password
+  tailscale_device_id: str
+  client_tag: str
+  support_tag: str
+  default_timeout_minutes: int(30,480)
