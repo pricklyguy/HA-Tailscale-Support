@@ -1,37 +1,81 @@
 # Prickly Guy Remote Support for Home Assistant
 
-Client-controlled, time-limited remote support access using Tailscale OAuth and device tags.
+Client-controlled, time-limited remote support access using Tailscale and Home Assistant.
 
-## Features
-- ✅ OAuth tokens that never expire (auto-refresh every 50 minutes)
-- ✅ Client controls access with simple toggle switch
-- ✅ Auto-timeout after configurable period (0.5 - 8 hours)
-- ✅ Visual notifications on all devices
-- ✅ Secure tag-based access control
-- ✅ Client phones/tablets never affected
+## v2 — Home Assistant App
 
-## What This Does
-Allows you to provide secure, time-limited remote support to Home Assistant installations without requiring clients to manage expiring API keys. Clients control when you have access with a simple dashboard toggle.
+This branch contains the modernization of Prickly Guy Remote Support into a native Home Assistant App (formerly called an add-on).
 
-## Requirements
-- Home Assistant with packages enabled
-- Tailscale account (free tier works)
-- Tailscale add-on installed in Home Assistant
-- Card mod installed for dashboard card
+The goal is simple: **install the app, configure Tailscale once, and give the homeowner one obvious button to allow or revoke remote support.**
 
-## Installation
-See [INSTALLATION.md](Installation.md) for complete step-by-step instructions.
+### v2 features
 
-## Quick Start
-1. Drop `pg_support.yaml` into `/config/packages/`
-2. Follow the [installation guide](Installation.md)
-3. Client toggles support access when needed
-4. Access automatically expires after timeout
+- Native Home Assistant App installation
+- Home Assistant Ingress — no extra port forwarding or exposed web UI
+- Tailscale OAuth client credentials
+- Modern least-privilege `devices:core` API scope
+- Short-lived Tailscale API tokens automatically renewed by the app
+- Client-controlled support sessions
+- Automatic timeout from 30 minutes through 8 hours
+- Existing Tailscale tags saved and restored
+- No changes to the Tailscale ACL/policy file
+- No Card Mod requirement
+- Persistent session recovery after an app restart
+
+## Current status
+
+**v2 is experimental.** The original YAML package remains on `main` while the new App is developed and tested on the `v2-app-modernization` branch.
+
+## Architecture
+
+```text
+Home Assistant
+      │
+      │ Home Assistant Ingress
+      ▼
+Prickly Guy Remote Support App
+      │
+      ├── OAuth token management
+      ├── Session timer
+      ├── Tag backup / restore
+      └── Tailscale API
+               │
+               ▼
+          Tailscale device
+```
+
+The app does not modify the tailnet policy. Access is controlled by the tags already defined in the tailnet policy.
+
+## Tailscale requirements
+
+Create a Tailscale OAuth client/trust credential with the `devices:core` write scope and permission to manage the support/client tags.
+
+The app needs:
+
+- OAuth client ID
+- OAuth client secret
+- Tailscale device ID for the Home Assistant host
+- Client tag, normally `tag:client-device`
+- Support tag, normally `tag:support-enabled`
+
+Tailscale API access tokens expire after one hour. The app obtains a fresh token automatically instead of storing a long-lived API access token.
+
+## Development
+
+The v2 App lives in `tailscale_support/` and is intentionally marked `experimental` until it has been tested against current Home Assistant OS releases on both amd64 and aarch64.
+
+See [`tailscale_support/DOCS.md`](tailscale_support/DOCS.md) for the current setup and testing notes.
+
+## Legacy version
+
+The original package-based implementation remains available in `pg_support.yaml` and `Installation.md` while v2 is being developed.
 
 ## Support
+
 Created by **Prickly Guy** for family, friends, and clients.
 
-Questions? Contact: Support@Pricklyguy.com
+Questions? Contact: Support@PricklyGuy.com
 
 ## License
+
 MIT License - Feel free to use and modify!
