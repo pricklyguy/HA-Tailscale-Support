@@ -1,5 +1,5 @@
 name: "Prickly Guy Remote Support"
-version: "2.0.0-beta.1"
+version: "2.0.0-beta.2"
 slug: "prickly_guy_tailscale_support"
 description: "Client-controlled, time-limited Tailscale access for remote Home Assistant support."
 arch:
@@ -8,6 +8,7 @@ arch:
 url: "https://github.com/pricklyguy/HA-Tailscale-Support"
 startup: application
 boot: auto
+init: false
 ingress: true
 ingress_port: 8099
 ingress_stream: true
